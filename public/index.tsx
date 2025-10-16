@@ -1,3 +1,5 @@
+
+
 // =================================================================
 // 1. IMPORT LIBRARIES & INITIALIZE
 // =================================================================
@@ -9,6 +11,7 @@ import {
     getFirestore, collection, collectionGroup, addDoc, getDocs, getDoc, doc,
     updateDoc, deleteDoc, query, where, Timestamp, runTransaction, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+// FIX: Import 'Type' for JSON schema and fix Gemini API import.
 import { GoogleGenAI, Type } from "https://esm.run/@google/genai";
 
 // --- FIREBASE CONFIGURATION ---
@@ -29,7 +32,7 @@ try {
     db = getFirestore(app);
     ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 } catch (error) {
-    console.error("Initialization Error:", error.message);
+    console.error("Initialization Error:", (error as Error).message);
     document.body.innerHTML = `<div class="p-8 text-center bg-red-100 text-red-800">Error: Cannot connect to services. Please check configuration.</div>`;
 }
 
@@ -61,7 +64,9 @@ const handleAdminLogin = async (e) => {
     e.preventDefault();
     const errorEl = document.getElementById('admin-login-error');
     errorEl.textContent = '';
+    // FIX: Cast HTML elements to the correct type to access 'value' property.
     const email = (document.getElementById('admin-email') as HTMLInputElement).value;
+    // FIX: Cast HTML elements to the correct type to access 'value' property.
     const password = (document.getElementById('admin-password') as HTMLInputElement).value;
     try {
         await signInWithEmailAndPassword(auth, email, password);
@@ -73,6 +78,7 @@ const handleAdminLogin = async (e) => {
 const handleStudentCheckin = async (e) => {
     e.preventDefault();
     const messageEl = document.getElementById('checkin-message');
+    // FIX: Cast HTML element to HTMLButtonElement to access 'disabled' property.
     const buttonEl = document.getElementById('student-checkin-button') as HTMLButtonElement;
 
     buttonEl.disabled = true;
@@ -81,6 +87,7 @@ const handleStudentCheckin = async (e) => {
     messageEl.className = 'text-sm mt-4 text-center text-gray-500';
 
     const checkinData = {
+        // FIX: Cast HTML elements to the correct type to access 'value' property.
         prefix: (document.getElementById('student-prefix') as HTMLSelectElement).value,
         firstName: (document.getElementById('student-firstname') as HTMLInputElement).value.trim(),
         lastName: (document.getElementById('student-lastname') as HTMLInputElement).value.trim(),
@@ -142,7 +149,7 @@ const handleStudentCheckin = async (e) => {
         (e.target as HTMLFormElement).reset();
 
     } catch (error) {
-        messageEl.textContent = error.message || 'เกิดข้อผิดพลาด โปรดลองอีกครั้ง';
+        messageEl.textContent = (error as Error).message || 'เกิดข้อผิดพลาด โปรดลองอีกครั้ง';
         messageEl.className = 'text-sm mt-4 text-center text-red-500';
     } finally {
         buttonEl.disabled = false;
@@ -183,9 +190,13 @@ const loadAdminActivities = async () => {
             listEl.appendChild(el);
         });
 
+        // FIX: Cast e.target to HTMLElement to access dataset property.
         document.querySelectorAll('.delete-activity-btn').forEach(btn => btn.addEventListener('click', (e) => handleDeleteActivity((e.target as HTMLElement).dataset.id)));
+        // FIX: Cast e.target to HTMLElement to access dataset property.
         document.querySelectorAll('.edit-activity-btn').forEach(btn => btn.addEventListener('click', (e) => handleEditActivity((e.target as HTMLElement).dataset.id)));
+        // FIX: Cast e.target to HTMLElement to access dataset property.
         document.querySelectorAll('.view-participants-btn').forEach(btn => btn.addEventListener('click', (e) => handleViewParticipants((e.target as HTMLElement).dataset.id)));
+        // FIX: Cast e.target to HTMLElement to access dataset property.
         document.querySelectorAll('.manage-codes-btn').forEach(btn => btn.addEventListener('click', (e) => handleManageCodes((e.target as HTMLElement).dataset.id)));
     } catch(error) {
         console.error("Error loading activities:", error);
@@ -197,9 +208,11 @@ const handleSaveActivity = async (e) => {
     e.preventDefault();
     const errorEl = document.getElementById('activity-form-error');
     errorEl.textContent = '';
+    // FIX: Cast HTML elements to the correct type to access 'value' property.
     const editId = (document.getElementById('edit-activity-id') as HTMLInputElement).value;
     const quota = parseInt((document.getElementById('activity-quota') as HTMLInputElement).value, 10);
 
+    // FIX: Define activityData as 'any' to allow dynamic property assignment.
     const activityData: any = {
         activityName: (document.getElementById('activity-name') as HTMLInputElement).value,
         description: (document.getElementById('activity-description') as HTMLTextAreaElement).value,
@@ -251,6 +264,7 @@ const handleEditActivity = async (id) => {
     const activitySnap = await getDoc(doc(db, "activities", id));
     if (activitySnap.exists()) {
         const activity = activitySnap.data();
+        // FIX: Cast HTML elements to the correct type to access their properties.
         (document.getElementById('activity-form') as HTMLFormElement).reset();
         (document.getElementById('edit-activity-id') as HTMLInputElement).value = id;
         (document.getElementById('activity-name') as HTMLInputElement).value = activity.activityName;
@@ -258,9 +272,9 @@ const handleEditActivity = async (id) => {
         if (activity.startDatetime?.toDate) (document.getElementById('start-datetime') as HTMLInputElement).value = new Date(activity.startDatetime.seconds * 1000).toISOString().slice(0, 16);
         if (activity.endDatetime?.toDate) (document.getElementById('end-datetime') as HTMLInputElement).value = new Date(activity.endDatetime.seconds * 1000).toISOString().slice(0, 16);
         (document.getElementById('activity-location') as HTMLInputElement).value = activity.location;
-        (document.getElementById('activity-hours') as HTMLInputElement).value = activity.hours || 0;
+        (document.getElementById('activity-hours') as HTMLInputElement).value = (activity.hours || 0).toString();
         const quotaInput = document.getElementById('activity-quota') as HTMLInputElement;
-        quotaInput.value = activity.quota;
+        quotaInput.value = activity.quota.toString();
         quotaInput.disabled = true;
         document.getElementById('modal-title').textContent = 'แก้ไขกิจกรรม';
         document.getElementById('activity-modal').classList.add('flex');
@@ -293,6 +307,7 @@ const confirmDelete = async () => {
 const handleStudentHistorySearch = async (e) => {
     e.preventDefault();
     const resultsEl = document.getElementById('student-history-results');
+    // FIX: Cast HTML element to HTMLInputElement to access 'value' property.
     const studentCode = (document.getElementById('search-student-code') as HTMLInputElement).value.trim();
     const exportButton = document.getElementById('export-history-csv-button');
 
@@ -414,6 +429,7 @@ const loadOpenActivities = async () => {
 const handleStudentLookup = async (e) => {
     e.preventDefault();
     const resultsEl = document.getElementById('student-lookup-results');
+    // FIX: Cast HTML element to HTMLInputElement to access 'value' property.
     const studentCode = (document.getElementById('lookup-student-code') as HTMLInputElement).value.trim();
 
     if (!studentCode) return;
@@ -579,6 +595,7 @@ const handleExportCodesToCsv = async () => {
 const handleClassReportExport = async (e) => {
     e.preventDefault();
     const statusEl = document.getElementById('class-report-status');
+    // FIX: Cast HTML element to HTMLSelectElement to access 'value' property.
     const classLevel = (document.getElementById('report-class-level') as HTMLSelectElement).value;
 
     if (!classLevel) {
@@ -689,12 +706,14 @@ const renderParticipationChart = async () => {
             backgroundColors.push(`hsla(${Math.random() * 360}, 70%, 60%, 0.6)`);
         });
 
+        // FIX: Cast HTML element to HTMLCanvasElement to access 'getContext'.
         const ctx = (document.getElementById('participationChart') as HTMLCanvasElement).getContext('2d');
 
         if (participationChart) {
             participationChart.destroy();
         }
 
+        // FIX: Cast window to 'any' to access the Chart object from Chart.js library.
         participationChart = new (window as any).Chart(ctx, {
             type: 'bar',
             data: {
@@ -739,6 +758,7 @@ const handleAiSuggestion = async (e) => {
         return;
     }
 
+    // FIX: Cast HTML elements to the correct type to access their properties.
     const topic = (document.getElementById('ai-activity-topic') as HTMLInputElement).value;
     const button = document.getElementById('ai-suggestion-button') as HTMLButtonElement;
     const resultsEl = document.getElementById('ai-suggestion-results');
@@ -755,6 +775,7 @@ const handleAiSuggestion = async (e) => {
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
+                // FIX: Use 'Type' enum for response schema definition.
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
@@ -797,9 +818,11 @@ const handleAiSuggestion = async (e) => {
 
             document.querySelectorAll('.use-suggestion-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
+                    // FIX: Cast e.target to HTMLElement to access dataset property.
                     const data = (e.target as HTMLElement).dataset;
                     document.getElementById('activity-modal').classList.add('flex');
                     document.getElementById('modal-title').textContent = 'สร้างกิจกรรมใหม่ (จาก AI)';
+                    // FIX: Cast HTML elements to the correct type to access their properties.
                     (document.getElementById('activity-form') as HTMLFormElement).reset();
                     (document.getElementById('edit-activity-id') as HTMLInputElement).value = '';
                     (document.getElementById('activity-quota') as HTMLInputElement).disabled = false;
@@ -862,6 +885,7 @@ const initializeEventListeners = () => {
     document.getElementById('activity-form').addEventListener('submit', handleSaveActivity);
     document.getElementById('student-history-form').addEventListener('submit', handleStudentHistorySearch);
     document.getElementById('show-create-activity-modal').addEventListener('click', () => {
+        // FIX: Cast HTML elements to the correct type to access their properties.
         (document.getElementById('activity-form') as HTMLFormElement).reset();
         (document.getElementById('edit-activity-id') as HTMLInputElement).value = '';
         document.getElementById('modal-title').textContent = 'สร้างกิจกรรมใหม่';
@@ -886,6 +910,7 @@ const initializeEventListeners = () => {
     });
     document.getElementById('show-student-history-lookup').addEventListener('click', () => {
         showView('student-history-lookup-view');
+        // FIX: Cast HTMLFormElement to access 'reset'.
         (document.getElementById('student-lookup-form') as HTMLFormElement).reset();
         document.getElementById('student-lookup-results').innerHTML = '';
     });
@@ -898,6 +923,7 @@ const initializeEventListeners = () => {
     // AI Suggester Listeners
     document.getElementById('show-ai-suggester-modal').addEventListener('click', () => {
         document.getElementById('ai-suggestion-modal').classList.add('flex');
+        // FIX: Cast HTMLFormElement to access 'reset'.
         (document.getElementById('ai-suggestion-form') as HTMLFormElement).reset();
         document.getElementById('ai-suggestion-results').innerHTML = '';
     });
