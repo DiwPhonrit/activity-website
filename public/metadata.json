@@ -1,0 +1,6 @@
+
+{
+  "name": "Student Activity Recorder",
+  "description": "A web application for students at โรงเรียนนาเวียงจุลดิศวิทยา to check into school activities and for administrators to manage these activities, track participation, generate reports, and get AI-powered activity suggestions.",
+  "requestFramePermissions": []
+}
